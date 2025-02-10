@@ -23,15 +23,15 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Install Cargo CycloneDX
-        run: cargo install cargo-cyclonedx
-
       - name: Ensure Cargo Project Exists
         run: |
           if [ ! -f Cargo.toml ]; then
             echo "🚨 Cargo.toml not found! Initializing a dummy project..."
             cargo init --name testrepo
           fi
+
+      - name: Install Cargo CycloneDX
+        run: cargo install cargo-cyclonedx
 
       - name: Generate SBOM (Test Exploit)
         run: |
@@ -57,7 +57,7 @@ jobs:
         run: |
           if [ -f /tmp/pwned ]; then
             echo "🔥 Exploit SUCCESSFUL: Arbitrary command executed"
-            exit 1  # Fail the job to indicate the vulnerability exists
+            exit 1  # Fail the job if the exploit worked
           else
             echo "❌ Exploit FAILED: No command execution detected"
             exit 0  # Pass the job if no exploit was detected
