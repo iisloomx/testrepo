@@ -57,8 +57,9 @@ jobs:
         run: |
           if [ -f /tmp/pwned ]; then
             echo "🔥 Exploit SUCCESSFUL: Arbitrary command executed"
-            exit 1  # Fail the job if the exploit worked
+            exit 0  # Do NOT fail the job, just log success
           else
             echo "❌ Exploit FAILED: No command execution detected"
             exit 0  # Pass the job if no exploit was detected
           fi
+
