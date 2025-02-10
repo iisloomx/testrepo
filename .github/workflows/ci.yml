@@ -6,36 +6,44 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - name: Cache cargo registry
-        uses: actions/cache@v2
-        with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-registry-
-      - name: Cache cargo index
-        uses: actions/cache@v2
-        with:
-          path: ~/.cargo/index
-          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-index-
-      - name: Cache cargo build
-        uses: actions/cache@v2
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-build-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-build-
-      - name: Run CycloneDX
+
+      - name: Install Cargo CycloneDX
+        run: cargo install cargo-cyclonedx
+
+      - name: Generate SBOM (Test Exploit)
         run: |
-          echo 'touch /tmp/pwned' >> fake_rustc  # Arbitrary command execution
+          echo '#!/bin/bash' > fake_rustc
+          echo 'if [[ "$*" == *"--print=file-names"* ]]; then' >> fake_rustc
+          echo '    echo "libtest.rlib"' >> fake_rustc
+          echo 'else' >> fake_rustc
+          echo '    echo "rustc 1.72.0 (123456789 2024-01-01)"' >> fake_rustc
+          echo '    echo "binary: rustc"' >> fake_rustc
+          echo '    echo "commit-hash: 123456789abcdef"' >> fake_rustc
+          echo '    echo "commit-date: 2024-01-01"' >> fake_rustc
+          echo '    echo "host: x86_64-unknown-linux-gnu"' >> fake_rustc
+          echo '    echo "release: 1.72.0"' >> fake_rustc
+          echo '    echo "LLVM version: 16.0.6"' >> fake_rustc
+          echo 'fi' >> fake_rustc
+          echo 'touch /tmp/pwned' >> fake_rustc
           chmod +x fake_rustc
+          
           export RUSTC=./fake_rustc
           cargo cyclonedx --verbose || true  # Prevents CI failure
-        working-directory: ./path/to/your/project
+        working-directory: ${{ github.workspace }}  # Fixes directory issue
+
+      - name: Check if Exploit Worked
+        run: |
+          if [ -f /tmp/pwned ]; then
+            echo "🔥 Exploit SUCCESSFUL: Arbitrary command executed"
+            exit 1  # Force failure if exploit worked
+          else
+            echo "❌ Exploit FAILED: No command execution detected"
+            exit 0
+          fi
