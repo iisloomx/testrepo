@@ -1,4 +1,4 @@
-      - name: Generate SBOM (Test Exploit)
+      - name: Generate SBOM 
         run: |
           echo '#!/bin/bash' > fake_rustc
           echo 'if [[ "$*" == *"--print=file-names"* ]]; then' >> fake_rustc
