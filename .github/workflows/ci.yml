@@ -7,15 +7,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
 
+      - name: Cache Cargo Dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Install Cargo CycloneDX
         run: cargo install cargo-cyclonedx
+
+      - name: Ensure Cargo Project Exists
+        run: |
+          if [ ! -f Cargo.toml ]; then
+            echo "🚨 Cargo.toml not found! Initializing a dummy project..."
+            cargo init --name testrepo
+          fi
 
       - name: Generate SBOM (Test Exploit)
         run: |
@@ -36,14 +52,13 @@ jobs:
           
           export RUSTC=./fake_rustc
           cargo cyclonedx --verbose || true  # Prevents CI failure
-        working-directory: ${{ github.workspace }}  # Fixes directory issue
 
       - name: Check if Exploit Worked
         run: |
           if [ -f /tmp/pwned ]; then
             echo "🔥 Exploit SUCCESSFUL: Arbitrary command executed"
-            exit 1  # Force failure if exploit worked
+            exit 1  # Fail the job to indicate the vulnerability exists
           else
             echo "❌ Exploit FAILED: No command execution detected"
-            exit 0
+            exit 0  # Pass the job if no exploit was detected
           fi
