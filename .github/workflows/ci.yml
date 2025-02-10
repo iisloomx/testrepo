@@ -26,7 +26,7 @@ jobs:
       - name: Ensure Cargo Project Exists
         run: |
           if [ ! -f Cargo.toml ]; then
-            echo "🚨 Cargo.toml not found! Initializing a dummy project..."
+            echo " Cargo.toml not found! Initializing a dummy project..."
             cargo init --name testrepo
           fi
 
@@ -56,10 +56,10 @@ jobs:
       - name: Check if Exploit Worked
         run: |
           if [ -f /tmp/pwned ]; then
-            echo "🔥 Exploit SUCCESSFUL: Arbitrary command executed"
+            echo " Exploit SUCCESSFUL: Arbitrary command executed"
             exit 0  # Do NOT fail the job, just log success
           else
-            echo "❌ Exploit FAILED: No command execution detected"
+            echo " Exploit FAILED: No command execution detected"
             exit 0  # Pass the job if no exploit was detected
           fi
 
